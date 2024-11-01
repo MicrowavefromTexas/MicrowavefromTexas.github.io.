@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cat Space Shooter</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #282828;
+            font-family: Arial, sans-serif;
+        }
+
+        #gameCanvas {
+            display: block;
+            background-color: #000;
+        }
+
+        #score {
+            color: white;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 24px;
+        }
+
+        #endCard {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 24px;
+            text-align: center;
+        }
+
+        #pauseText {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 24px;
+            text-align: center;
+        }
+
+        #startCard {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 24px;
+            text-align: center;
+        }
+
+        #playButton {
+            padding: 10px 20px;
+            font-size: 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        #playButton:hover {
+            background-color: #45a049;
+        }
+
+        #credits {
+            margin-top: 20px;
+            font-size: 16px;
+        }
+
+        img {
+            width: 100px;
+            margin-top: 10px;
+        }
+    </style>
+	
+	<link rel="icon" href="file:///C:/Users/micha/Downloads/b3608aace9e5390c0c71f475a230ff2a.png" type="image/x-icon"/>
+	
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+    <div id="score">Score: 0</div>
+    <div id="endCard">Congratulations! You won against the aliens! :3 Your Score: <span id="finalScore"></span></div>
+    <div id="pauseText">Paused<br>Press Escape to Resume</div>
+    
+    <div id="startCard">
+        <h1>Welcome to Cat Space Shooter! :3</h1>
+        <button id="playButton">Play</button>
+        <div id="credits">Credits: Game by Microwave</div>
+        <img src="file:///C:/Users/micha/Downloads/b3608aace9e5390c0c71f475a230ff2a.png" alt="Game Image">
+    </div>
+	
+	<div id="endCard">
+    Game Over! Your Score: <span id="finalScore"></span><br>
+    <button id="restartButton">Restart</button>
+</div>
+
+
+    <audio id="backgroundMusic" loop>
+        <source src="file:///C:/Users/micha/Downloads/spotifydown.com%20-%20Tem%20Shop.mp3" type="audio/mpeg">
+
+    </audio>
+	
+	<audio id="backgroundMusic" loop>
+    <source src="file:///C:/Users/micha/Downloads/spotifydown.com%20-%20Tem%20Shop.mp3" type="audio/mpeg">
+</audio>
+<audio id="winMusic">
+    <source src="file:///C:/Users/micha/Downloads/You%20win%20sound%20effect%205%20[%20ezmp3.cc%20].mp3" type="audio/mpeg"> <!-- Replace with your win sound file path -->
+</audio>
+
+	
+<script>
+
+document.getElementById('restartButton').addEventListener('click', () => {
+    score = 0;
+    enemies = [];
+    bullets = [];
+    player.health = 100;
+    document.getElementById('endCard').style.display = 'none';
+    gameLoop();
+    setInterval(spawnAlien, 1000);
+});
+
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let score = 0;
+    let isPaused = false;
+    const catSize = 60;
+    const playerSpeed = 6;
+    const bulletSpeed = 8;
+    const enemySpeed = 2;
+
+    let player = {
+        x: canvas.width / 2 - catSize / 2,
+        y: canvas.height - 100,
+        width: catSize,
+        height: catSize,
+        dx: 0,
+    };
+
+    let bullets = [];
+    let enemies = [];
+    let explosions = [];
+
+    const playerImg = new Image();
+    playerImg.src = 'file:///C:/Users/micha/Downloads/666c0818a71451574ff030cc7b0de4c7-vmake.png';
+
+    const alienImages = [
+        'file:///C:/Users/micha/Downloads/df6b1a649accffb6901f903a7ad47204.png',
+        'file:///C:/Users/micha/Downloads/55775e17766207c86976f48d40e8eaf5.png',
+        'file:///C:/Users/micha/Downloads/81b4c9bead9abd3fb9070ae5c66b4274.png',
+        'file:///C:/Users/micha/Downloads/b3608aace9e5390c0c71f475a230ff2a.png'
+    ];
+
+    const explosionImg = new Image();
+    explosionImg.src = 'file:///C:/Users/micha/Downloads/png-transparent-explode-game-orange-explosion-thumbnail-removebg-preview.png';
+
+    function spawnAlien() {
+        const size = catSize;
+        const x = Math.random() * (canvas.width - size);
+        const alienImage = new Image();
+        alienImage.src = alienImages[Math.floor(Math.random() * alienImages.length)];
+        enemies.push({ x, y: -size, width: size, height: size, img: alienImage });
+    }
+
+    function drawPlayer() {
+        ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+    }
+
+    function movePlayer() {
+        player.x += player.dx;
+        if (player.x < 0) player.x = 0;
+        if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+    }
+
+    function shoot() {
+        bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20 });
+    }
+
+    function drawBullets() {
+        bullets.forEach((bullet, index) => {
+            bullet.y -= bulletSpeed;
+            ctx.fillStyle = 'yellow';
+            ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+            if (bullet.y < 0) bullets.splice(index, 1);
+        });
+    }
+
+    function drawEnemies() {
+        enemies.forEach((enemy, index) => {
+            enemy.y += enemySpeed;
+            ctx.drawImage(enemy.img, enemy.x, enemy.y, enemy.width, enemy.height);
+            if (enemy.y > canvas.height) enemies.splice(index, 1);
+        });
+    }
+
+function endGame() {
+   
+    document.getElementById('backgroundMusic').pause();
+    document.getElementById('backgroundMusic').currentTime = 0; 
+
+    
+    document.getElementById('winMusic').play();
+
+    document.getElementById('finalScore').innerText = score;
+    document.getElementById('endCard').style.display = 'block';
+    isPaused = true;
+}
+
+function checkCollisions() {
+    bullets.forEach((bullet, bulletIndex) => {
+        enemies.forEach((enemy, enemyIndex) => {
+            if (
+                bullet.x < enemy.x + enemy.width &&
+                bullet.x + bullet.width > enemy.x &&
+                bullet.y < enemy.y + enemy.height &&
+                bullet.y + bullet.height > enemy.y
+            ) {
+                
+                explosions.push({
+                    x: enemy.x,
+                    y: enemy.y,
+                    width: 50, 
+                    height: 50,
+                    life: 10, 
+                    img: explosionImg 
+                });
+
+                enemies.splice(enemyIndex, 1);
+                bullets.splice(bulletIndex, 1);
+                score++;
+                document.getElementById('score').innerText = `Score: ${score}`;
+
+                
+                if (score >= 100) {
+                    endGame();
+                }
+            }
+        });
+    });
+}
+
+function drawExplosions() {
+    explosions.forEach((explosion, index) => {
+        ctx.drawImage(explosion.img, explosion.x, explosion.y, explosion.width, explosion.height);
+        explosion.life--;
+        if (explosion.life <= 0) explosions.splice(index, 1); 
+    });
+}
+
+
+
+    function drawExplosions() {
+        explosions.forEach((explosion, index) => {
+            ctx.drawImage(explosion.img, explosion.x, explosion.y, explosion.width, explosion.height);
+            explosion.life--;
+            if (explosion.life <= 0) explosions.splice(index, 1);
+        });
+    }
+
+    function gameLoop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (!isPaused) {
+            movePlayer();
+            drawPlayer();
+            drawBullets();
+            drawEnemies();
+            checkCollisions();
+            drawExplosions(); 
+        }
+        requestAnimationFrame(gameLoop);
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowLeft') player.dx = -playerSpeed;
+        if (event.key === 'ArrowRight') player.dx = playerSpeed;
+        if (event.key === ' ') shoot();
+        if (event.key === 'Escape') {
+            isPaused = !isPaused;
+            document.getElementById('pauseText').style.display = isPaused ? 'block' : 'none';
+        }
+    });
+
+    document.addEventListener('keyup', (event) => {
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') player.dx = 0;
+    });
+
+    document.getElementById('playButton').addEventListener('click', () => {
+        document.getElementById('startCard').style.display = 'none';
+        document.getElementById('backgroundMusic').play(); 
+        gameLoop(); 
+        setInterval(spawnAlien, 1000); 
+    });
+
+    
+    document.getElementById('backgroundMusic').play();
+	
+</script>
+</body>
+</html>
